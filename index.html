@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasil Real-Time Pemilihan Ketua OSIS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Plugin untuk menampilkan label di dalam chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Animasi untuk pemenang */
+        .winner-card {
+            box-shadow: 0 0 20px 8px rgba(255, 215, 0, 0.7);
+            border: 3px solid gold;
+            transform: scale(1.05);
+        }
+        #voteChart {
+            max-height: 400px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <!-- LOGO SEKOLAH DAN OSIS DITAMBAHKAN DI SINI -->
+            <div class="flex justify-center items-center space-x-6 mb-6">
+                <img src="images/logo-sekolah.png" alt="Logo Sekolah" class="h-24 object-contain">
+                <img src="images/logo-osis.png" alt="Logo OSIS" class="h-24 object-contain">
+            </div>
+            <h1 class="text-3xl md:text-5xl font-bold text-gray-900 dark:text-white">Rekapitulasi Hasil Pemilihan</h1>
+            <p class="text-xl md:text-2xl text-blue-600 dark:text-blue-400">Ketua OSIS SMA Unggul Islam Al Fahd</p>
+        </header>
+
+        <!-- Loading / Error Indicator -->
+        <div id="status-indicator" class="text-center py-10">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
+            <p class="mt-4 text-lg">Mengambil data suara terbaru...</p>
+        </div>
+
+        <!-- Candidates Container -->
+        <main id="candidates-container" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <!-- Candidate cards will be dynamically inserted here -->
+        </main>
+        
+        <!-- Chart and Total Votes Container -->
+        <div id="summary-container" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+            <!-- Pie Chart -->
+            <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                 <h2 class="text-2xl font-bold text-center mb-4 text-gray-900 dark:text-white">Diagram Perolehan Suara</h2>
+                <canvas id="voteChart"></canvas>
+            </div>
+
+            <!-- Total Votes -->
+            <div class="text-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md h-full flex flex-col justify-center">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Total Suara Masuk</h2>
+                <p id="total-votes-display" class="text-7xl font-extrabold text-blue-600 dark:text-blue-400 my-4">0</p>
+                <div class="text-sm text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-sync-alt fa-spin mr-2"></i>
+                    <span id="last-updated">Diperbarui...</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        // --- KONFIGURASI ---
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7pUh4kIJI6xfQXlndQ5m5hXgU-1bzctmmhsbcaLmTMfHcq0rk4j73hRNpPRLtctfNG_ngQeEQcrj-/pub?gid=1604938357&single=true&output=csv';
+        const REFRESH_INTERVAL = 30000; // 30 detik
+
+        // --- DATA KANDIDAT DIAMBIL DARI APLIKASI VOTING ---
+        const candidates = [
+            { id: 'kandidat_1', number: '01', ketua: 'NHEYRINDA AFRILIAN', wakil: 'NAZILAH MENTARI HARYAN', csvName: 'NHEYRINDA AFRILIAN', photo: 'images/paslon1.png' },
+            { id: 'kandidat_2', number: '02', ketua: 'IHDA NURDIANA EFELYN', wakil: 'BALQIS NADHIRAH SAKHIYAH', csvName: 'IHDA NURDIANA EFELYN', photo: 'images/paslon2.png' },
+            { id: 'kandidat_3', number: '03', ketua: 'RACHMAD AIDIEL ADHA', wakil: 'NANDANA RAKHA DANISWARA', csvName: 'RACHMAD AIDIEL ADHA', photo: 'images/paslon3.png' },
+            { id: 'kandidat_4', number: '04', ketua: 'GILANG AKBAR PRAYOGA', wakil: 'MUHAMMAD HARU SALAM', csvName: 'GILANG AKBAR PRAYOGA', photo: 'images/paslon4.png' }
+        ];
+        const chartColors = ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6'];
+
+        // --- ELEMENT REFERENCES ---
+        const statusIndicatorEl = document.getElementById('status-indicator');
+        const candidatesContainerEl = document.getElementById('candidates-container');
+        const summaryContainerEl = document.getElementById('summary-container');
+        const totalVotesDisplayEl = document.getElementById('total-votes-display');
+        const lastUpdatedEl = document.getElementById('last-updated');
+        
+        let voteChart = null;
+
+        function setupUI() {
+            candidatesContainerEl.innerHTML = '';
+            candidates.forEach(candidate => {
+                const cardHTML = `
+                    <div id="card-${candidate.id}" class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 text-center flex flex-col justify-between items-center transition-all duration-500 h-[480px] md:h-[520px]">
+                        
+                        <!-- FOTO DISESUAIKAN UKURAN & ASPEK RASIO -->
+                        <img src="${candidate.photo}" alt="Foto ${candidate.ketua}" class="w-[65%] aspect-[9/16] object-cover rounded-lg shadow-md">
+                        
+                        <!-- BLOK NAMA DAN SUARA DIGESER KE BAWAH -->
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">${candidate.ketua}</h3>
+                            <p class="text-md text-amber-600 dark:text-amber-500 font-medium">${candidate.wakil}</p>
+                            <p class="text-4xl font-bold text-blue-500 dark:text-blue-400 mt-4" id="votes-${candidate.id}">0</p>
+                            <p class="text-lg text-gray-500 dark:text-gray-400">Suara</p>
+                        </div>
+                    </div>
+                `;
+                candidatesContainerEl.innerHTML += cardHTML;
+            });
+            initializeChart();
+        }
+
+        function initializeChart() {
+            // Mendaftarkan plugin datalabels secara global
+            Chart.register(ChartDataLabels);
+
+            const ctx = document.getElementById('voteChart').getContext('2d');
+            voteChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: candidates.map(c => `${c.ketua} & ${c.wakil}`),
+                    datasets: [{
+                        label: 'Perolehan Suara',
+                        data: candidates.map(() => 0),
+                        backgroundColor: chartColors,
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                        detailedStats: []
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: document.body.classList.contains('dark') ? '#FFF' : '#333'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? (context.parsed / total * 100).toFixed(1) : 0;
+                                        label += `${context.raw} suara (${percentage}%)`;
+                                    }
+                                    return label;
+                                },
+                                afterBody: function(context) {
+                                    const dataIndex = context[0].dataIndex;
+                                    const detailedStats = context[0].dataset.detailedStats[dataIndex];
+                                    if (!detailedStats || detailedStats.total === 0) return [];
+                                    const classBreakdown = detailedStats.byClass;
+                                    const candidateTotal = detailedStats.total;
+                                    let breakdownLines = ['\nData Kelas Pemilih:'];
+                                    const sortedClasses = Object.entries(classBreakdown).sort(([, a], [, b]) => b - a);
+                                    sortedClasses.forEach(([className, count]) => {
+                                        const percentage = ((count / candidateTotal) * 100).toFixed(1);
+                                        breakdownLines.push(`- ${className}: ${count} suara (${percentage}%)`);
+                                    });
+                                    return breakdownLines;
+                                }
+                            }
+                        },
+                        // Konfigurasi untuk plugin datalabels
+                        datalabels: {
+                            formatter: (value, ctx) => {
+                                const sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                const percentage = sum > 0 ? (value / sum * 100) : 0;
+
+                                // Jangan tampilkan label jika persentase terlalu kecil
+                                if (percentage < 5) {
+                                    return '';
+                                }
+
+                                // Ambil nama depan ketua
+                                const label = candidates[ctx.dataIndex].ketua;
+                                const firstName = label.split(' ')[0];
+
+                                return `${firstName}\n${percentage.toFixed(1)}%`;
+                            },
+                            color: '#fff',
+                            textAlign: 'center',
+                            font: {
+                                weight: 'bold',
+                                size: 12,
+                            },
+                            // Menambahkan outline agar teks mudah dibaca
+                            textStrokeColor: 'rgba(0,0,0,0.5)',
+                            textStrokeWidth: 2
+                        }
+                    }
+                }
+            });
+        }
+        
+        async function fetchAndProcessData() {
+            try {
+                const response = await fetch(`${CSV_URL}&t=${new Date().getTime()}`);
+                if (!response.ok) throw new Error(`Gagal mengambil data: ${response.statusText}`);
+                const csvText = await response.text();
+                
+                const rows = csvText.split(/\r?\n/).slice(1);
+                const allVoteData = rows.map(row => {
+                    const columns = row.split(',');
+                    let choice = (columns[2] || "").trim().replace(/"/g, '');
+                    const candidateId = parseInt(choice, 10);
+                    if (!isNaN(candidateId)) {
+                        const foundCandidate = candidates.find(c => c.number === `0${candidateId}` || c.number === `${candidateId}`);
+                        if (foundCandidate) {
+                            choice = foundCandidate.csvName;
+                        }
+                    }
+                    return {
+                        choice: choice,
+                        class: (columns[3] || "").trim().replace(/"/g, '')
+                    };
+                }).filter(v => v.choice && v.class);
+
+                updateDisplay(allVoteData);
+
+                statusIndicatorEl.classList.add('hidden');
+                candidatesContainerEl.classList.remove('hidden');
+                summaryContainerEl.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                statusIndicatorEl.innerHTML = `
+                    <i class="fas fa-exclamation-triangle text-4xl text-red-500"></i>
+                    <p class="mt-4 text-lg text-red-500">Gagal memuat data suara. Mencoba lagi...</p>
+                `;
+            }
+        }
+        
+        function updateDisplay(allVoteData) {
+            const voteStats = {};
+            candidates.forEach(c => {
+                voteStats[c.csvName] = { total: 0, byClass: {} };
+            });
+
+            allVoteData.forEach(vote => {
+                if (voteStats.hasOwnProperty(vote.choice)) {
+                    voteStats[vote.choice].total++;
+                    const className = vote.class;
+                    if (!voteStats[vote.choice].byClass[className]) {
+                        voteStats[vote.choice].byClass[className] = 0;
+                    }
+                    voteStats[vote.choice].byClass[className]++;
+                }
+            });
+
+            const totalVotes = allVoteData.length;
+            totalVotesDisplayEl.textContent = totalVotes;
+            
+            let maxVotes = -1;
+            let winners = [];
+            candidates.forEach(c => {
+                 const votes = voteStats[c.csvName].total || 0;
+                 if (votes > maxVotes) {
+                     maxVotes = votes;
+                     winners = [c.id];
+                 } else if (votes === maxVotes && maxVotes > 0) {
+                     winners.push(c.id);
+                 }
+            });
+
+            candidates.forEach(candidate => {
+                const votes = voteStats[candidate.csvName].total || 0;
+                document.getElementById(`votes-${candidate.id}`).textContent = votes;
+                document.getElementById(`card-${candidate.id}`).classList.toggle('winner-card', winners.includes(candidate.id));
+            });
+            
+            if(voteChart) {
+                voteChart.data.datasets[0].data = candidates.map(c => voteStats[c.csvName].total || 0);
+                voteChart.data.datasets[0].detailedStats = candidates.map(c => voteStats[c.csvName]);
+                voteChart.update();
+            }
+
+            lastUpdatedEl.textContent = `Diperbarui pada ${new Date().toLocaleTimeString('id-ID')}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupUI();
+            fetchAndProcessData();
+            setInterval(fetchAndProcessData, REFRESH_INTERVAL);
+        });
+    </script>
+</body>
+</html>
+
