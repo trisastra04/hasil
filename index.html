@@ -302,7 +302,10 @@
         
         async function fetchPassword() {
             try {
-                const response = await fetch(`${PASSWORD_CSV_URL}&t=${new Date().getTime()}`);
+                const response = await fetch(`${PASSWORD_CSV_URL}&t=${new Date().getTime()}`, {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
                 if (!response.ok) throw new Error('Gagal mengambil password');
                 const csvText = await response.text();
                 const rows = csvText.split(/\r?\n/).slice(1);
@@ -319,7 +322,10 @@
 
         async function fetchAndProcessData() {
             try {
-                const voteResponse = await fetch(`${VOTE_DATA_CSV_URL}&t=${new Date().getTime()}`);
+                const voteResponse = await fetch(`${VOTE_DATA_CSV_URL}&t=${new Date().getTime()}`, {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
                 if (!voteResponse.ok) throw new Error(`Gagal mengambil data suara: ${voteResponse.statusText}`);
                 const csvText = await voteResponse.text();
 
