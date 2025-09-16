@@ -14,6 +14,20 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        
+        /* CSS untuk background gambar sekolah */
+        .app-background {
+            background-image: linear-gradient(rgba(243, 244, 246, 0.92), rgba(243, 244, 246, 0.92)), url('images/background-sekolah.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        /* CSS overlay background untuk dark mode */
+        .dark .app-background {
+            background-image: linear-gradient(rgba(17, 24, 39, 0.95), rgba(17, 24, 39, 0.95)), url('images/background-sekolah.jpg');
+        }
+
         /* Animasi untuk pemenang */
         .winner-card {
             box-shadow: 0 0 20px 8px rgba(255, 215, 0, 0.7);
@@ -25,7 +39,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+<body class="app-background text-gray-800 dark:text-gray-200">
 
     <div class="container mx-auto p-4 md:p-8">
         <header class="text-center mb-8">
