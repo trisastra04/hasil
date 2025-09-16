@@ -184,7 +184,7 @@
                             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">${candidate.ketua}</h3>
                             <p class="text-md text-amber-600 dark:text-amber-500 font-medium">${candidate.wakil}</p>
                             <p class="vote-count-display hidden text-4xl font-bold text-blue-500 dark:text-blue-400 mt-4" id="votes-${candidate.id}">0</p>
-                            <p class="text-lg text-gray-500 dark:text-gray-400">Suara</p>
+                            <p class="vote-label text-lg text-gray-500 dark:text-gray-400">Suara</p>
                         </div>
                     </div>
                 `;
@@ -339,8 +339,9 @@
 
                 statusIndicatorEl.classList.add('hidden');
                 topStatsWrapperEl.classList.remove('hidden');
+                candidatesContainerEl.classList.remove('hidden'); // Selalu tampilkan kartu kandidat
+                
                 if (resultsUnlocked) {
-                    candidatesContainerEl.classList.remove('hidden');
                     summaryContainerEl.classList.remove('hidden');
                 }
 
@@ -406,6 +407,10 @@
             }
 
             lastUpdatedEl.textContent = `Diperbarui pada ${new Date().toLocaleTimeString('id-ID')}`;
+             // Sembunyikan label "Suara" jika hasil belum terbuka
+            document.querySelectorAll('.vote-label').forEach(el => {
+                el.classList.toggle('hidden', !resultsUnlocked);
+            });
         }
         
         function showDetailModal(candidateName, stats) {
@@ -454,7 +459,9 @@
                 document.querySelectorAll('.vote-count-display').forEach(el => {
                     el.classList.remove('hidden');
                 });
-                candidatesContainerEl.classList.remove('hidden');
+                 document.querySelectorAll('.vote-label').forEach(el => {
+                    el.classList.remove('hidden');
+                });
                 summaryContainerEl.classList.remove('hidden');
             } else {
                 passwordInput.value = '';
