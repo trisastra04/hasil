@@ -28,14 +28,22 @@
             background-image: linear-gradient(rgba(17, 24, 39, 0.95), rgba(17, 24, 39, 0.95)), url('images/background-sekolah.jpg');
         }
 
-        /* Animasi untuk pemenang */
-        .winner-card {
-            box-shadow: 0 0 20px 8px rgba(255, 215, 0, 0.7);
-            border: 3px solid gold;
-            transform: scale(1.05);
+        /* Menghilangkan efek pemenang */
+        .candidate-card {
+            transition: transform 0.3s ease-in-out;
         }
+        .candidate-card:hover {
+            transform: scale(1.03);
+        }
+
         #voteChart {
             max-height: 400px;
+            cursor: pointer;
+        }
+        
+        #close-modal-btn {
+            font-size: 2rem;
+            line-height: 1;
         }
     </style>
 </head>
@@ -43,7 +51,7 @@
 
     <div class="container mx-auto p-4 md:p-8">
         <header class="text-center mb-8">
-            <!-- LOGO SEKOLAH DAN OSIS DITAMBAHKAN DI SINI -->
+            <!-- LOGO SEKOLAH DAN OSIS -->
             <div class="flex justify-center items-center space-x-6 mb-6">
                 <img src="images/logo-sekolah.png" alt="Logo Sekolah" class="h-24 object-contain">
                 <img src="images/logo-osis.png" alt="Logo OSIS" class="h-24 object-contain">
@@ -51,6 +59,16 @@
             <h1 class="text-3xl md:text-5xl font-bold text-gray-900 dark:text-white">Rekapitulasi Hasil Pemilihan</h1>
             <p class="text-xl md:text-2xl text-blue-600 dark:text-blue-400">Ketua OSIS SMA Unggul Islam Al Fahd</p>
         </header>
+
+        <!-- Total Votes Container (Dipindahkan ke Atas dan Diperkecil) -->
+        <div id="total-votes-container" class="hidden max-w-sm mx-auto mb-8 text-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Total Suara Masuk</h2>
+            <p id="total-votes-display" class="text-6xl font-extrabold text-blue-600 dark:text-blue-400 my-2">0</p>
+            <div class="text-xs text-gray-500 dark:text-gray-400">
+                <i class="fas fa-sync-alt fa-spin mr-1"></i>
+                <span id="last-updated">Diperbarui...</span>
+            </div>
+        </div>
 
         <!-- Loading / Error Indicator -->
         <div id="status-indicator" class="text-center py-10">
@@ -63,33 +81,33 @@
             <!-- Candidate cards will be dynamically inserted here -->
         </main>
         
-        <!-- Chart and Total Votes Container -->
-        <div id="summary-container" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
-            <!-- Pie Chart -->
-            <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+        <!-- Chart Container -->
+        <div id="summary-container" class="hidden">
+            <div class="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
                  <h2 class="text-2xl font-bold text-center mb-4 text-gray-900 dark:text-white">Diagram Perolehan Suara</h2>
                 <canvas id="voteChart"></canvas>
             </div>
+        </div>
+    </div>
 
-            <!-- Total Votes -->
-            <div class="text-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md h-full flex flex-col justify-center">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Total Suara Masuk</h2>
-                <p id="total-votes-display" class="text-7xl font-extrabold text-blue-600 dark:text-blue-400 my-4">0</p>
-                <div class="text-sm text-gray-500 dark:text-gray-400">
-                    <i class="fas fa-sync-alt fa-spin mr-2"></i>
-                    <span id="last-updated">Diperbarui...</span>
-                </div>
+    <!-- Modal for Detailed Stats -->
+    <div id="detail-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 transition-opacity duration-300">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 relative transform transition-all duration-300 scale-95 opacity-0" id="modal-box">
+            <button id="close-modal-btn" class="absolute top-3 right-4 text-gray-400 hover:text-gray-800 dark:hover:text-white">&times;</button>
+            <h3 id="modal-title" class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Detail Perolehan Suara</h3>
+            <div id="modal-content" class="text-left text-gray-700 dark:text-gray-300">
+                <!-- Content will be injected by JavaScript -->
             </div>
         </div>
-
     </div>
+
 
     <script type="module">
         // --- KONFIGURASI ---
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7pUh4kIJI6xfQXlndQ5m5hXgU-1bzctmmhsbcaLmTMfHcq0rk4j73hRNpPRLtctfNG_ngQeEQcrj-/pub?gid=1604938357&single=true&output=csv';
         const REFRESH_INTERVAL = 30000; // 30 detik
 
-        // --- DATA KANDIDAT DIAMBIL DARI APLIKASI VOTING ---
+        // --- DATA KANDIDAT ---
         const candidates = [
             { id: 'kandidat_1', number: '01', ketua: 'NHEYRINDA AFRILIAN', wakil: 'NAZILAH MENTARI HARYAN', csvName: 'NHEYRINDA AFRILIAN', photo: 'images/paslon1.png' },
             { id: 'kandidat_2', number: '02', ketua: 'IHDA NURDIANA EFELYN', wakil: 'BALQIS NADHIRAH SAKHIYAH', csvName: 'IHDA NURDIANA EFELYN', photo: 'images/paslon2.png' },
@@ -100,10 +118,14 @@
 
         // --- ELEMENT REFERENCES ---
         const statusIndicatorEl = document.getElementById('status-indicator');
+        const totalVotesContainerEl = document.getElementById('total-votes-container');
         const candidatesContainerEl = document.getElementById('candidates-container');
         const summaryContainerEl = document.getElementById('summary-container');
         const totalVotesDisplayEl = document.getElementById('total-votes-display');
         const lastUpdatedEl = document.getElementById('last-updated');
+        const detailModalEl = document.getElementById('detail-modal');
+        const modalBoxEl = document.getElementById('modal-box');
+        const closeModalBtn = document.getElementById('close-modal-btn');
         
         let voteChart = null;
 
@@ -111,12 +133,8 @@
             candidatesContainerEl.innerHTML = '';
             candidates.forEach(candidate => {
                 const cardHTML = `
-                    <div id="card-${candidate.id}" class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 text-center flex flex-col justify-between items-center transition-all duration-500 h-[480px] md:h-[520px]">
-                        
-                        <!-- FOTO DISESUAIKAN UKURAN & ASPEK RASIO -->
+                    <div id="card-${candidate.id}" class="candidate-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 text-center flex flex-col justify-between items-center h-[480px] md:h-[520px]">
                         <img src="${candidate.photo}" alt="Foto ${candidate.ketua}" class="w-[65%] aspect-[9/16] object-cover rounded-lg shadow-md">
-                        
-                        <!-- BLOK NAMA DAN SUARA DIGESER KE BAWAH -->
                         <div>
                             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">${candidate.ketua}</h3>
                             <p class="text-md text-amber-600 dark:text-amber-500 font-medium">${candidate.wakil}</p>
@@ -131,9 +149,7 @@
         }
 
         function initializeChart() {
-            // Mendaftarkan plugin datalabels secara global
             Chart.register(ChartDataLabels);
-
             const ctx = document.getElementById('voteChart').getContext('2d');
             voteChart = new Chart(ctx, {
                 type: 'pie',
@@ -150,6 +166,15 @@
                 },
                 options: {
                     responsive: true,
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const dataIndex = elements[0].index;
+                            const chartData = elements[0].element.$context.chart.data;
+                            const candidateName = chartData.labels[dataIndex];
+                            const detailedStats = chartData.datasets[0].detailedStats[dataIndex];
+                            showDetailModal(candidateName, detailedStats);
+                        }
+                    },
                     plugins: {
                         legend: {
                             position: 'top',
@@ -157,60 +182,19 @@
                                 color: document.body.classList.contains('dark') ? '#FFF' : '#333'
                             }
                         },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed !== null) {
-                                        const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                        const percentage = total > 0 ? (context.parsed / total * 100).toFixed(1) : 0;
-                                        label += `${context.raw} suara (${percentage}%)`;
-                                    }
-                                    return label;
-                                },
-                                afterBody: function(context) {
-                                    const dataIndex = context[0].dataIndex;
-                                    const detailedStats = context[0].dataset.detailedStats[dataIndex];
-                                    if (!detailedStats || detailedStats.total === 0) return [];
-                                    const classBreakdown = detailedStats.byClass;
-                                    const candidateTotal = detailedStats.total;
-                                    let breakdownLines = ['\nData Kelas Pemilih:'];
-                                    const sortedClasses = Object.entries(classBreakdown).sort(([, a], [, b]) => b - a);
-                                    sortedClasses.forEach(([className, count]) => {
-                                        const percentage = ((count / candidateTotal) * 100).toFixed(1);
-                                        breakdownLines.push(`- ${className}: ${count} suara (${percentage}%)`);
-                                    });
-                                    return breakdownLines;
-                                }
-                            }
-                        },
-                        // Konfigurasi untuk plugin datalabels
+                        tooltip: { enabled: false }, // Menonaktifkan tooltip bawaan
                         datalabels: {
                             formatter: (value, ctx) => {
                                 const sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                                 const percentage = sum > 0 ? (value / sum * 100) : 0;
-
-                                // Jangan tampilkan label jika persentase terlalu kecil
-                                if (percentage < 5) {
-                                    return '';
-                                }
-
-                                // Ambil nama depan ketua
+                                if (percentage < 5) { return ''; }
                                 const label = candidates[ctx.dataIndex].ketua;
                                 const firstName = label.split(' ')[0];
-
                                 return `${firstName}\n${percentage.toFixed(1)}%`;
                             },
                             color: '#fff',
                             textAlign: 'center',
-                            font: {
-                                weight: 'bold',
-                                size: 12,
-                            },
-                            // Menambahkan outline agar teks mudah dibaca
+                            font: { weight: 'bold', size: 12 },
                             textStrokeColor: 'rgba(0,0,0,0.5)',
                             textStrokeWidth: 2
                         }
@@ -232,9 +216,7 @@
                     const candidateId = parseInt(choice, 10);
                     if (!isNaN(candidateId)) {
                         const foundCandidate = candidates.find(c => c.number === `0${candidateId}` || c.number === `${candidateId}`);
-                        if (foundCandidate) {
-                            choice = foundCandidate.csvName;
-                        }
+                        if (foundCandidate) { choice = foundCandidate.csvName; }
                     }
                     return {
                         choice: choice,
@@ -245,6 +227,7 @@
                 updateDisplay(allVoteData);
 
                 statusIndicatorEl.classList.add('hidden');
+                totalVotesContainerEl.classList.remove('hidden');
                 candidatesContainerEl.classList.remove('hidden');
                 summaryContainerEl.classList.remove('hidden');
 
@@ -277,22 +260,9 @@
             const totalVotes = allVoteData.length;
             totalVotesDisplayEl.textContent = totalVotes;
             
-            let maxVotes = -1;
-            let winners = [];
-            candidates.forEach(c => {
-                 const votes = voteStats[c.csvName].total || 0;
-                 if (votes > maxVotes) {
-                     maxVotes = votes;
-                     winners = [c.id];
-                 } else if (votes === maxVotes && maxVotes > 0) {
-                     winners.push(c.id);
-                 }
-            });
-
             candidates.forEach(candidate => {
                 const votes = voteStats[candidate.csvName].total || 0;
                 document.getElementById(`votes-${candidate.id}`).textContent = votes;
-                document.getElementById(`card-${candidate.id}`).classList.toggle('winner-card', winners.includes(candidate.id));
             });
             
             if(voteChart) {
@@ -303,6 +273,58 @@
 
             lastUpdatedEl.textContent = `Diperbarui pada ${new Date().toLocaleTimeString('id-ID')}`;
         }
+        
+        function showDetailModal(candidateName, stats) {
+            const modalTitleEl = document.getElementById('modal-title');
+            const modalContentEl = document.getElementById('modal-content');
+
+            modalTitleEl.textContent = `Detail Suara: ${candidateName.split(' & ')[0]}`;
+
+            if (!stats || stats.total === 0) {
+                modalContentEl.innerHTML = `<p class="text-gray-600 dark:text-gray-400">Belum ada suara untuk kandidat ini.</p>`;
+            } else {
+                const classBreakdown = stats.byClass;
+                const candidateTotal = stats.total;
+                
+                let contentHTML = `<p class="mb-4 text-lg">Total Suara Diperoleh: <span class="font-bold text-blue-500">${candidateTotal}</span></p>`;
+                contentHTML += `<h4 class="font-semibold mb-2 text-gray-800 dark:text-gray-200">Rincian per Kelas:</h4>`;
+                contentHTML += `<ul class="space-y-2 max-h-60 overflow-y-auto pr-2">`;
+                
+                const sortedClasses = Object.entries(classBreakdown).sort(([, a], [, b]) => b - a);
+
+                sortedClasses.forEach(([className, count]) => {
+                    const percentage = ((count / candidateTotal) * 100).toFixed(1);
+                    contentHTML += `
+                        <li class="flex justify-between items-center py-1 border-b border-gray-200 dark:border-gray-700">
+                            <span>${className}</span>
+                            <span class="font-semibold text-right">${count} suara<br><span class="text-xs text-gray-500">(${percentage}%)</span></span>
+                        </li>`;
+                });
+
+                contentHTML += `</ul>`;
+                modalContentEl.innerHTML = contentHTML;
+            }
+            
+            detailModalEl.classList.remove('hidden');
+            setTimeout(() => {
+                modalBoxEl.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function hideDetailModal() {
+            modalBoxEl.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                detailModalEl.classList.add('hidden');
+            }, 300);
+        }
+
+        // --- Event Listeners ---
+        closeModalBtn.addEventListener('click', hideDetailModal);
+        detailModalEl.addEventListener('click', (event) => {
+            if (event.target === detailModalEl) {
+                hideDetailModal();
+            }
+        });
 
         document.addEventListener('DOMContentLoaded', () => {
             setupUI();
