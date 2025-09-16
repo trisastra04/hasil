@@ -75,8 +75,8 @@
             <!-- Voter Stats per Class Container -->
             <div class="lg:col-span-2 text-left p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Statistik Kehadiran Pemilih</h2>
-                <div id="voter-stats-content" class="space-y-3 max-h-48 overflow-y-auto pr-2">
-                    <!-- Stats will be injected here -->
+                <div class="relative h-56">
+                    <canvas id="voterTurnoutChart"></canvas>
                 </div>
             </div>
         </div>
@@ -154,6 +154,7 @@
         const closeModalBtn = document.getElementById('close-modal-btn');
         
         let voteChart = null;
+        let turnoutChart = null;
 
         function setupUI() {
             candidatesContainerEl.innerHTML = '';
@@ -172,6 +173,7 @@
                 candidatesContainerEl.innerHTML += cardHTML;
             });
             initializeChart();
+            initializeTurnoutChart();
         }
 
         function initializeChart() {
@@ -229,13 +231,54 @@
             });
         }
         
+        function initializeTurnoutChart() {
+            const ctx = document.getElementById('voterTurnoutChart').getContext('2d');
+            turnoutChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Sudah Memilih',
+                        data: [],
+                        backgroundColor: '#3b82f6', // blue-500
+                    },
+                    {
+                        label: 'Belum Memilih',
+                        data: [],
+                        backgroundColor: '#e5e7eb', // gray-200
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                            ticks: { color: document.body.classList.contains('dark') ? '#FFF' : '#333' }
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            ticks: { color: document.body.classList.contains('dark') ? '#FFF' : '#333' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: document.body.classList.contains('dark') ? '#FFF' : '#333' }
+                        },
+                        tooltip: { mode: 'index' }
+                    }
+                }
+            });
+        }
+
         async function fetchAndProcessData() {
             try {
                 const voteResponse = await fetch(`${VOTE_DATA_CSV_URL}&t=${new Date().getTime()}`);
                 if (!voteResponse.ok) throw new Error(`Gagal mengambil data suara: ${voteResponse.statusText}`);
                 const csvText = await voteResponse.text();
 
-                // Process votes
                 const rows = csvText.split(/\r?\n/).slice(1).filter(row => row.trim() !== '');
                 const allVoteData = rows.map(row => {
                     const columns = row.split(',');
@@ -245,7 +288,6 @@
                         const foundCandidate = candidates.find(c => c.number === `0${candidateId}` || c.number === `${candidateId}`);
                         if (foundCandidate) { choice = foundCandidate.csvName; }
                     }
-                    // Data kelas diambil dari Kolom D (index 3)
                     return { choice, class: (columns[3] || "").trim().replace(/"/g, '') };
                 }).filter(v => v.choice && v.class);
 
@@ -269,7 +311,6 @@
             const voteStats = {};
             candidates.forEach(c => { voteStats[c.csvName] = { total: 0, byClass: {} }; });
             
-            // Menghitung jumlah suara yang sudah masuk per kelas dari Kolom D
             const votesByClass = {};
             allVoteData.forEach(vote => {
                 if (voteStats.hasOwnProperty(vote.choice)) {
@@ -284,38 +325,26 @@
                 votesByClass[vote.class]++;
             });
 
-            // Generate voter stats HTML
-            const voterStatsContentEl = document.getElementById('voter-stats-content');
-            let statsHTML = '';
-            
-            // Menggabungkan semua nama kelas dari daftar statis dan data suara yang masuk
-            // untuk memastikan tidak ada kelas yang terlewat
-            const allClassNames = new Set([...totalVotersByClass.keys(), ...Object.keys(votesByClass)]);
-            const sortedClasses = Array.from(allClassNames).sort();
+            // Update Turnout Chart
+            if (turnoutChart) {
+                const allClassNames = new Set([...totalVotersByClass.keys(), ...Object.keys(votesByClass)]);
+                const sortedClasses = Array.from(allClassNames).sort();
+                
+                const votedData = [];
+                const notVotedData = [];
 
-            for (const className of sortedClasses) {
-                const total = totalVotersByClass.get(className) || (votesByClass[className] || 0);
-                const voted = votesByClass[className] || 0;
-                const notVoted = total - voted;
-                const percentageVoted = total > 0 ? ((voted / total) * 100).toFixed(1) : 0;
+                for (const className of sortedClasses) {
+                    const total = totalVotersByClass.get(className) || (votesByClass[className] || 0);
+                    const voted = votesByClass[className] || 0;
+                    notVotedData.push(total - voted);
+                    votedData.push(voted);
+                }
 
-                statsHTML += `
-                    <div>
-                        <div class="flex justify-between items-center text-sm font-semibold mb-1">
-                            <span class="text-gray-800 dark:text-gray-200">${className}</span>
-                            <span class="text-gray-600 dark:text-gray-400">${voted} / ${total} Pemilih</span>
-                        </div>
-                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${percentageVoted}%"></div>
-                        </div>
-                        <div class="flex justify-between items-center text-xs mt-1 text-gray-500 dark:text-gray-400">
-                            <span>Sudah Memilih: ${voted}</span>
-                            <span>Belum Memilih: ${notVoted}</span>
-                        </div>
-                    </div>
-                `;
+                turnoutChart.data.labels = sortedClasses;
+                turnoutChart.data.datasets[0].data = votedData;
+                turnoutChart.data.datasets[1].data = notVotedData;
+                turnoutChart.update();
             }
-            voterStatsContentEl.innerHTML = statsHTML;
 
 
             const totalVotes = allVoteData.length;
