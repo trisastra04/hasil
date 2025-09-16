@@ -49,7 +49,19 @@
 </head>
 <body class="app-background text-gray-800 dark:text-gray-200">
 
-    <div class="container mx-auto p-4 md:p-8">
+    <div class="container mx-auto p-4 md:p-8 relative">
+        <!-- Password Section -->
+        <div id="password-section" class="absolute top-4 right-4 z-20">
+            <div class="flex items-center space-x-2 bg-white/80 dark:bg-gray-800/80 p-2 rounded-lg shadow">
+                <input type="password" id="password-input" placeholder="Password" class="bg-transparent text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-amber-500 focus:border-amber-500 outline-none w-28 px-2 py-1">
+                <button id="password-submit" class="bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold p-1.5 rounded transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
         <header class="text-center mb-8">
             <!-- LOGO SEKOLAH DAN OSIS -->
             <div class="flex justify-center items-center space-x-6 mb-6">
@@ -117,8 +129,9 @@
     <script type="module">
         // --- KONFIGURASI ---
         const VOTE_DATA_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7pUh4kIJI6xfQXlndQ5m5hXgU-1bzctmmhsbcaLmTMfHcq0rk4j73hRNpPRLtctfNG_ngQeEQcrj-/pub?gid=1604938357&single=true&output=csv';
+        const PASSWORD_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7pUh4kIJI6xfQXlndQ5m5hXgU-1bzctmmhsbcaLmTMfHcq0rk4j73hRNpPRLtctfNG_ngQeEQcrj-/pub?gid=1346986434&single=true&output=csv';
         const REFRESH_INTERVAL = 30000; // 30 detik
-
+        
         // --- DATA JUMLAH PEMILIH PER KELAS (STATIS) ---
         const TOTAL_VOTERS_DATA = new Map([
             ['X 1', 19],
@@ -152,9 +165,14 @@
         const detailModalEl = document.getElementById('detail-modal');
         const modalBoxEl = document.getElementById('modal-box');
         const closeModalBtn = document.getElementById('close-modal-btn');
+        const passwordSection = document.getElementById('password-section');
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmitBtn = document.getElementById('password-submit');
         
         let voteChart = null;
         let turnoutChart = null;
+        let resultsUnlocked = false;
+        let correctPassword = '';
 
         function setupUI() {
             candidatesContainerEl.innerHTML = '';
@@ -165,7 +183,7 @@
                         <div>
                             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">${candidate.ketua}</h3>
                             <p class="text-md text-amber-600 dark:text-amber-500 font-medium">${candidate.wakil}</p>
-                            <p class="text-4xl font-bold text-blue-500 dark:text-blue-400 mt-4" id="votes-${candidate.id}">0</p>
+                            <p class="vote-count-display hidden text-4xl font-bold text-blue-500 dark:text-blue-400 mt-4" id="votes-${candidate.id}">0</p>
                             <p class="text-lg text-gray-500 dark:text-gray-400">Suara</p>
                         </div>
                     </div>
@@ -240,7 +258,7 @@
                     datasets: [{
                         label: 'Sudah Memilih',
                         data: [],
-                        backgroundColor: '#3b82f6', // blue-500
+                        backgroundColor: '#f59e0b', // amber-500 (Kuning Gold)
                     },
                     {
                         label: 'Belum Memilih',
@@ -254,23 +272,49 @@
                     scales: {
                         x: {
                             stacked: true,
-                            ticks: { color: document.body.classList.contains('dark') ? '#FFF' : '#333' }
+                            ticks: { 
+                                color: document.body.classList.contains('dark') ? '#FFF' : '#333',
+                                font: { weight: 'bold' }
+                            }
                         },
                         y: {
                             stacked: true,
                             beginAtZero: true,
-                            ticks: { color: document.body.classList.contains('dark') ? '#FFF' : '#333' }
+                            ticks: { 
+                                color: document.body.classList.contains('dark') ? '#FFF' : '#333',
+                                font: { weight: 'bold' }
+                            }
                         }
                     },
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { color: document.body.classList.contains('dark') ? '#FFF' : '#333' }
+                            labels: { 
+                                color: document.body.classList.contains('dark') ? '#FFF' : '#333',
+                                font: { weight: 'bold' }
+                            }
                         },
                         tooltip: { mode: 'index' }
                     }
                 }
             });
+        }
+        
+        async function fetchPassword() {
+            try {
+                const response = await fetch(`${PASSWORD_CSV_URL}&t=${new Date().getTime()}`);
+                if (!response.ok) throw new Error('Gagal mengambil password');
+                const csvText = await response.text();
+                const rows = csvText.split(/\r?\n/).slice(1);
+                if (rows.length > 0 && rows[0].trim()) {
+                    correctPassword = rows[0].split(',')[0].trim();
+                }
+            } catch (error) {
+                console.error("Error fetching password:", error);
+                passwordInput.placeholder = "Error PW";
+                passwordInput.disabled = true;
+                passwordSubmitBtn.disabled = true;
+            }
         }
 
         async function fetchAndProcessData() {
@@ -295,8 +339,10 @@
 
                 statusIndicatorEl.classList.add('hidden');
                 topStatsWrapperEl.classList.remove('hidden');
-                candidatesContainerEl.classList.remove('hidden');
-                summaryContainerEl.classList.remove('hidden');
+                if (resultsUnlocked) {
+                    candidatesContainerEl.classList.remove('hidden');
+                    summaryContainerEl.classList.remove('hidden');
+                }
 
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -325,7 +371,6 @@
                 votesByClass[vote.class]++;
             });
 
-            // Update Turnout Chart
             if (turnoutChart) {
                 const allClassNames = new Set([...totalVotersByClass.keys(), ...Object.keys(votesByClass)]);
                 const sortedClasses = Array.from(allClassNames).sort();
@@ -345,7 +390,6 @@
                 turnoutChart.data.datasets[1].data = notVotedData;
                 turnoutChart.update();
             }
-
 
             const totalVotes = allVoteData.length;
             totalVotesDisplayEl.textContent = totalVotes;
@@ -403,9 +447,37 @@
             if (event.target === detailModalEl) { hideDetailModal(); }
         });
 
-        document.addEventListener('DOMContentLoaded', () => {
+        passwordSubmitBtn.addEventListener('click', () => {
+            if (passwordInput.value === correctPassword && correctPassword !== '') {
+                resultsUnlocked = true;
+                passwordSection.classList.add('hidden');
+                document.querySelectorAll('.vote-count-display').forEach(el => {
+                    el.classList.remove('hidden');
+                });
+                candidatesContainerEl.classList.remove('hidden');
+                summaryContainerEl.classList.remove('hidden');
+            } else {
+                passwordInput.value = '';
+                passwordInput.placeholder = 'Password Salah!';
+                passwordInput.classList.add('border-red-500', 'placeholder-red-500');
+                setTimeout(() => {
+                    passwordInput.placeholder = 'Password';
+                    passwordInput.classList.remove('border-red-500', 'placeholder-red-500');
+                }, 2000);
+            }
+        });
+        
+        passwordInput.addEventListener('keypress', function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                passwordSubmitBtn.click();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchPassword(); // Ambil password terlebih dahulu
             setupUI();
-            fetchAndProcessData();
+            fetchAndProcessData(); // Kemudian ambil data suara
             setInterval(fetchAndProcessData, REFRESH_INTERVAL);
         });
     </script>
