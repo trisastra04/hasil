@@ -46,17 +46,15 @@
             line-height: 1;
         }
 
-        /* CSS UNTUK ANIMASI RUNNING TEXT */
+        /* CSS UNTUK ANIMASI RUNNING TEXT BARU */
         .running-text-content {
-            animation: marquee 25s linear infinite;
-            white-space: nowrap; /* Mencegah teks turun ke bawah */
+            animation: marquee 50s linear infinite;
             display: inline-block;
-            padding-left: 100%;
         }
 
         @keyframes marquee {
-            0% { transform: translateX(0%); }
-            100% { transform: translateX(-100%); }
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
         }
     </style>
 </head>
@@ -87,7 +85,7 @@
         </header>
 
         <!-- Top Stats Wrapper -->
-        <div id="top-stats-wrapper" class="hidden max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 items-start">
+        <div id="top-stats-wrapper" class="hidden max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 mb-4 items-start">
             <!-- Total Votes Container -->
             <div class="lg:col-span-1 text-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white">Total Suara Masuk</h2>
@@ -108,11 +106,26 @@
         </div>
 
         <!-- Running Text Container -->
-        <div id="running-text-container" class="hidden max-w-7xl mx-auto mb-8">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-2 overflow-hidden">
-                <p class="running-text-content text-lg font-semibold text-amber-600 dark:text-amber-500">
-                    Gunakan hak pilih Anda dengan bijak! Suara Anda menentukan masa depan OSIS SMA Unggul Islam Al-Fahd. Pemilihan yang Jujur, Adil, dan Transparan.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                </p>
+        <div id="running-text-container" class="hidden max-w-7xl mx-auto mb-4">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-2 overflow-hidden whitespace-nowrap">
+                <div class="running-text-content">
+                    <!-- Content Block 1 -->
+                    <span class="inline-flex items-center">
+                        <img src="images/logo-sekolah.png" alt="Logo Sekolah" class="h-6 w-auto mx-4">
+                        <span class="text-lg font-semibold text-amber-600 dark:text-amber-500">
+                            Gunakan hak pilih Anda dengan bijak! Suara Anda menentukan masa depan OSIS SMA Unggul Islam Al-Fahd. Pemilihan yang Jujur, Adil, dan Transparan.
+                        </span>
+                        <img src="images/logo-osis.png" alt="Logo OSIS" class="h-6 w-auto mx-4">
+                    </span>
+                    <!-- Content Block 2 (Duplicate for seamless loop) -->
+                     <span class="inline-flex items-center">
+                        <img src="images/logo-sekolah.png" alt="Logo Sekolah" class="h-6 w-auto mx-4">
+                        <span class="text-lg font-semibold text-amber-600 dark:text-amber-500">
+                            Gunakan hak pilih Anda dengan bijak! Suara Anda menentukan masa depan OSIS SMA Unggul Islam Al-Fahd. Pemilihan yang Jujur, Adil, dan Transparan.
+                        </span>
+                        <img src="images/logo-osis.png" alt="Logo OSIS" class="h-6 w-auto mx-4">
+                    </span>
+                </div>
             </div>
         </div>
 
