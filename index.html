@@ -131,7 +131,7 @@
         // --- KONFIGURASI ---
         const VOTE_DATA_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7pUh4kIJI6xfQXlndQ5m5hXgU-1bzctmmhsbcaLmTMfHcq0rk4j73hRNpPRLtctfNG_ngQeEQcrj-/pub?gid=1604938357&single=true&output=csv';
         const PASSWORD_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7pUh4kIJI6xfQXlndQ5m5hXgU-1bzctmmhsbcaLmTMfHcq0rk4j73hRNpPRLtctfNG_ngQeEQcrj-/pub?gid=1346986434&single=true&output=csv';
-        const REFRESH_INTERVAL = 30000; // 30 detik
+        const REFRESH_INTERVAL = 10000; // Interval diubah menjadi 10 detik
         
         // --- DATA JUMLAH PEMILIH PER KELAS (STATIS) ---
         const TOTAL_VOTERS_DATA = new Map([
@@ -413,7 +413,15 @@
                 voteChart.update();
             }
 
-            lastUpdatedEl.textContent = `Diperbarui pada ${new Date().toLocaleTimeString('id-ID')}`;
+            // Memperbarui format waktu
+            const now = new Date();
+            const options = {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+            };
+            const formattedDate = new Intl.DateTimeFormat('id-ID', options).format(now).replace(/\./g, ':');
+            lastUpdatedEl.textContent = `Diperbarui ${formattedDate}`;
+
              // Sembunyikan label "Suara" jika hasil belum terbuka
             document.querySelectorAll('.vote-label').forEach(el => {
                 el.classList.toggle('hidden', !resultsUnlocked);
