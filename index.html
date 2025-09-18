@@ -166,7 +166,7 @@
         // --- KONFIGURASI ---
         const VOTE_DATA_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7pUh4kIJI6xfQXlndQ5m5hXgU-1bzctmmhsbcaLmTMfHcq0rk4j73hRNpPRLtctfNG_ngQeEQcrj-/pub?gid=1604938357&single=true&output=csv';
         const PASSWORD_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7pUh4kIJI6xfQXlndQ5m5hXgU-1bzctmmhsbcaLmTMfHcq0rk4j73hRNpPRLtctfNG_ngQeEQcrj-/pub?gid=1346986434&single=true&output=csv';
-        const REFRESH_INTERVAL = 1000; // Interval diubah menjadi 1 detik
+        const REFRESH_INTERVAL = 30000; // Interval diubah menjadi 30 detik
         
         // --- DATA JUMLAH PEMILIH PER KELAS (STATIS) ---
         const TOTAL_VOTERS_DATA = new Map([
@@ -430,18 +430,15 @@
             detailModalEl.classList.remove('hidden');
             setTimeout(() => { modalBoxEl.classList.remove('scale-95', 'opacity-0'); }, 10);
         }
-
         function hideDetailModal() {
             modalBoxEl.classList.add('scale-95', 'opacity-0');
             setTimeout(() => { detailModalEl.classList.add('hidden'); }, 300);
         }
-
         // --- Event Listeners ---
         closeModalBtn.addEventListener('click', hideDetailModal);
         detailModalEl.addEventListener('click', (event) => {
             if (event.target === detailModalEl) hideDetailModal();
         });
-
         passwordSubmitBtn.addEventListener('click', () => {
             if (passwordInput.value === correctPassword && correctPassword !== '') {
                 resultsUnlocked = true;
@@ -465,7 +462,6 @@
                 passwordSubmitBtn.click();
             }
         });
-
         document.addEventListener('DOMContentLoaded', async () => {
             await fetchPassword();
             setupUI();
