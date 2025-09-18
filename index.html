@@ -170,15 +170,9 @@
         
         // --- DATA JUMLAH PEMILIH PER KELAS (STATIS) ---
         const TOTAL_VOTERS_DATA = new Map([
-            ['X 1', 19],
-            ['X 2', 19],
-            ['X 3', 24],
-            ['X 4', 23],
-            ['XI 1', 23],
-            ['XI 2', 25],
-            ['XI 3', 29],
-            ['XII 1', 22],
-            ['XII 2', 17],
+            ['X 1', 19], ['X 2', 19], ['X 3', 24], ['X 4', 23],
+            ['XI 1', 23], ['XI 2', 25], ['XI 3', 29],
+            ['XII 1', 22], ['XII 2', 17],
             ['Guru dan Tendik', 28]
         ]);
 
@@ -259,27 +253,18 @@
                         }
                     },
                     plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                color: document.body.classList.contains('dark') ? '#FFF' : '#333'
-                            }
-                        },
+                        legend: { position: 'top', labels: { color: document.body.classList.contains('dark') ? '#FFF' : '#333' } },
                         tooltip: { enabled: false },
                         datalabels: {
                             formatter: (value, ctx) => {
                                 const sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                                 const percentage = sum > 0 ? (value / sum * 100) : 0;
-                                if (percentage < 5) { return ''; }
-                                const label = candidates[ctx.dataIndex].ketua;
-                                const firstName = label.split(' ')[0];
+                                if (percentage < 5) return '';
+                                const firstName = candidates[ctx.dataIndex].ketua.split(' ')[0];
                                 return `${firstName}\n${percentage.toFixed(1)}%`;
                             },
-                            color: '#fff',
-                            textAlign: 'center',
-                            font: { weight: 'bold', size: 12 },
-                            textStrokeColor: 'rgba(0,0,0,0.5)',
-                            textStrokeWidth: 2
+                            color: '#fff', textAlign: 'center', font: { weight: 'bold', size: 12 },
+                            textStrokeColor: 'rgba(0,0,0,0.5)', textStrokeWidth: 2
                         }
                     }
                 }
@@ -292,45 +277,19 @@
                 type: 'bar',
                 data: {
                     labels: [],
-                    datasets: [{
-                        label: 'Sudah Memilih',
-                        data: [],
-                        backgroundColor: '#f59e0b', // amber-500 (Kuning Gold)
-                    },
-                    {
-                        label: 'Belum Memilih',
-                        data: [],
-                        backgroundColor: '#e5e7eb', // gray-200
-                    }]
+                    datasets: [
+                        { label: 'Sudah Memilih', data: [], backgroundColor: '#f59e0b' },
+                        { label: 'Belum Memilih', data: [], backgroundColor: '#e5e7eb' }
+                    ]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
                     scales: {
-                        x: {
-                            stacked: true,
-                            ticks: { 
-                                color: document.body.classList.contains('dark') ? '#FFF' : '#333',
-                                font: { weight: 'bold' }
-                            }
-                        },
-                        y: {
-                            stacked: true,
-                            beginAtZero: true,
-                            ticks: { 
-                                color: document.body.classList.contains('dark') ? '#FFF' : '#333',
-                                font: { weight: 'bold' }
-                            }
-                        }
+                        x: { stacked: true, ticks: { color: document.body.classList.contains('dark') ? '#FFF' : '#333', font: { weight: 'bold' } } },
+                        y: { stacked: true, beginAtZero: true, ticks: { color: document.body.classList.contains('dark') ? '#FFF' : '#333', font: { weight: 'bold' } } }
                     },
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { 
-                                color: document.body.classList.contains('dark') ? '#FFF' : '#333',
-                                font: { weight: 'bold' }
-                            }
-                        },
+                        legend: { position: 'bottom', labels: { color: document.body.classList.contains('dark') ? '#FFF' : '#333', font: { weight: 'bold' } } },
                         tooltip: { mode: 'index' }
                     }
                 }
@@ -339,10 +298,7 @@
         
         async function fetchPassword() {
             try {
-                const response = await fetch(`${PASSWORD_CSV_URL}&t=${new Date().getTime()}`, {
-                    method: 'GET',
-                    redirect: 'follow'
-                });
+                const response = await fetch(`${PASSWORD_CSV_URL}&t=${new Date().getTime()}`, { method: 'GET', redirect: 'follow' });
                 if (!response.ok) throw new Error('Gagal mengambil password');
                 const csvText = await response.text();
                 const rows = csvText.split(/\r?\n/).slice(1);
@@ -359,10 +315,7 @@
 
         async function fetchAndProcessData() {
             try {
-                const voteResponse = await fetch(`${VOTE_DATA_CSV_URL}&t=${new Date().getTime()}`, {
-                    method: 'GET',
-                    redirect: 'follow'
-                });
+                const voteResponse = await fetch(`${VOTE_DATA_CSV_URL}&t=${new Date().getTime()}`, { method: 'GET', redirect: 'follow' });
                 if (!voteResponse.ok) throw new Error(`Gagal mengambil data suara: ${voteResponse.statusText}`);
                 const csvText = await voteResponse.text();
 
@@ -373,7 +326,7 @@
                     const candidateId = parseInt(choice, 10);
                     if (!isNaN(candidateId)) {
                         const foundCandidate = candidates.find(c => c.number === `0${candidateId}` || c.number === `${candidateId}`);
-                        if (foundCandidate) { choice = foundCandidate.csvName; }
+                        if (foundCandidate) choice = foundCandidate.csvName;
                     }
                     return { choice, class: (columns[3] || "").trim().replace(/"/g, '') };
                 }).filter(v => v.choice && v.class);
@@ -383,17 +336,15 @@
                 statusIndicatorEl.classList.add('hidden');
                 topStatsWrapperEl.classList.remove('hidden');
                 runningTextContainerEl.classList.remove('hidden');
-                candidatesContainerEl.classList.remove('hidden'); // Selalu tampilkan kartu kandidat
-                
+                candidatesContainerEl.classList.remove('hidden');
                 if (resultsUnlocked) {
                     summaryContainerEl.classList.remove('hidden');
                 }
-
             } catch (error) {
                 console.error("Error fetching data:", error);
                 statusIndicatorEl.innerHTML = `
                     <i class="fas fa-exclamation-triangle text-4xl text-red-500"></i>
-                    <p class="mt-4 text-lg text-red-500">Gagal memuat data. Pastikan link CSV benar dan dapat diakses publik. Error: ${error.message}</p>
+                    <p class="mt-4 text-lg text-red-500">Gagal memuat data. Pastikan link CSV benar. Error: ${error.message}</p>
                 `;
             }
         }
@@ -412,7 +363,7 @@
                     }
                     voteStats[vote.choice].byClass[className]++;
                 }
-                if (!votesByClass[vote.class]) { votesByClass[vote.class] = 0; }
+                if (!votesByClass[vote.class]) votesByClass[vote.class] = 0;
                 votesByClass[vote.class]++;
             });
 
@@ -420,24 +371,20 @@
                 const allClassNames = new Set([...totalVotersByClass.keys(), ...Object.keys(votesByClass)]);
                 const sortedClasses = Array.from(allClassNames).sort();
                 
-                const votedData = [];
-                const notVotedData = [];
-
+                const votedData = []; const notVotedData = [];
                 for (const className of sortedClasses) {
                     const total = totalVotersByClass.get(className) || (votesByClass[className] || 0);
                     const voted = votesByClass[className] || 0;
                     notVotedData.push(total - voted);
                     votedData.push(voted);
                 }
-
                 turnoutChart.data.labels = sortedClasses;
                 turnoutChart.data.datasets[0].data = votedData;
                 turnoutChart.data.datasets[1].data = notVotedData;
                 turnoutChart.update();
             }
 
-            const totalVotes = allVoteData.length;
-            totalVotesDisplayEl.textContent = totalVotes;
+            totalVotesDisplayEl.textContent = allVoteData.length;
             
             candidates.forEach(candidate => {
                 const votes = voteStats[candidate.csvName].total || 0;
@@ -450,31 +397,22 @@
                 voteChart.update();
             }
 
-            // Memperbarui format waktu
             const now = new Date();
-            const options = {
-                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-            };
-            const formattedDate = new Intl.DateTimeFormat('id-ID', options).format(now).replace(/\./g, ':');
-            lastUpdatedEl.textContent = `Diperbarui ${formattedDate}`;
-
-             // Sembunyikan label "Suara" jika hasil belum terbuka
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            lastUpdatedEl.textContent = `Diperbarui ${new Intl.DateTimeFormat('id-ID', options).format(now).replace(/\./g, ':')} WIB`;
             document.querySelectorAll('.vote-label').forEach(el => {
                 el.classList.toggle('hidden', !resultsUnlocked);
             });
         }
         
         function showDetailModal(candidateName, stats) {
-            const modalTitleEl = document.getElementById('modal-title');
-            const modalContentEl = document.getElementById('modal-content');
             modalTitleEl.textContent = `Detail Suara: ${candidateName.split(' & ')[0]}`;
             if (!stats || stats.total === 0) {
-                modalContentEl.innerHTML = `<p class="text-gray-600 dark:text-gray-400">Belum ada suara untuk kandidat ini.</p>`;
+                modalContentEl.innerHTML = `<p class="text-gray-600 dark:text-gray-400">Belum ada suara.</p>`;
             } else {
                 const classBreakdown = stats.byClass;
                 const candidateTotal = stats.total;
-                let contentHTML = `<p class="mb-4 text-lg">Total Suara Diperoleh: <span class="font-bold text-blue-500">${candidateTotal}</span></p>`;
+                let contentHTML = `<p class="mb-4 text-lg">Total Diperoleh: <span class="font-bold text-blue-500">${candidateTotal}</span></p>`;
                 contentHTML += `<h4 class="font-semibold mb-2 text-gray-800 dark:text-gray-200">Rincian per Kelas:</h4>`;
                 contentHTML += `<ul class="space-y-2 max-h-60 overflow-y-auto pr-2">`;
                 const sortedClasses = Object.entries(classBreakdown).sort(([, a], [, b]) => b - a);
@@ -501,19 +439,14 @@
         // --- Event Listeners ---
         closeModalBtn.addEventListener('click', hideDetailModal);
         detailModalEl.addEventListener('click', (event) => {
-            if (event.target === detailModalEl) { hideDetailModal(); }
+            if (event.target === detailModalEl) hideDetailModal();
         });
 
         passwordSubmitBtn.addEventListener('click', () => {
             if (passwordInput.value === correctPassword && correctPassword !== '') {
                 resultsUnlocked = true;
                 passwordSection.classList.add('hidden');
-                document.querySelectorAll('.vote-count-display').forEach(el => {
-                    el.classList.remove('hidden');
-                });
-                 document.querySelectorAll('.vote-label').forEach(el => {
-                    el.classList.remove('hidden');
-                });
+                document.querySelectorAll('.vote-count-display, .vote-label').forEach(el => el.classList.remove('hidden'));
                 summaryContainerEl.classList.remove('hidden');
             } else {
                 passwordInput.value = '';
@@ -526,7 +459,7 @@
             }
         });
         
-        passwordInput.addEventListener('keypress', function(event) {
+        passwordInput.addEventListener('keypress', (event) => {
             if (event.key === "Enter") {
                 event.preventDefault();
                 passwordSubmitBtn.click();
@@ -534,13 +467,12 @@
         });
 
         document.addEventListener('DOMContentLoaded', async () => {
-            await fetchPassword(); // Ambil password terlebih dahulu
+            await fetchPassword();
             setupUI();
-            fetchAndProcessData(); // Kemudian ambil data suara
+            fetchAndProcessData();
             setInterval(fetchAndProcessData, REFRESH_INTERVAL);
         });
     </script>
 </body>
 </html>
-
 
