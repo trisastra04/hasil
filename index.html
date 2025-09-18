@@ -207,6 +207,8 @@
         const detailModalEl = document.getElementById('detail-modal');
         const modalBoxEl = document.getElementById('modal-box');
         const closeModalBtn = document.getElementById('close-modal-btn');
+        const modalTitleEl = document.getElementById('modal-title');
+        const modalContentEl = document.getElementById('modal-content');
         const passwordSection = document.getElementById('password-section');
         const passwordInput = document.getElementById('password-input');
         const passwordSubmitBtn = document.getElementById('password-submit');
@@ -254,15 +256,6 @@
                 },
                 options: {
                     responsive: true,
-                    onClick: (event, elements) => {
-                        if (!elements.length) return;
-                        const dataIndex = elements[0].index;
-                        const candidateName = voteChart.data.labels[dataIndex];
-                        const detailedStats = voteChart.data.datasets[0].detailedStats[dataIndex];
-                        if (detailedStats) {
-                            showDetailModal(candidateName, detailedStats);
-                        }
-                    },
                     plugins: {
                         legend: { position: 'top', labels: { color: document.body.classList.contains('dark') ? '#FFF' : '#333' } },
                         tooltip: { enabled: false },
@@ -280,6 +273,19 @@
                     }
                 }
             });
+
+            // PERBAIKAN: Menambahkan event listener langsung ke canvas
+            ctx.canvas.onclick = (event) => {
+                const elements = voteChart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+                if (elements.length) {
+                    const dataIndex = elements[0].index;
+                    const candidateName = voteChart.data.labels[dataIndex];
+                    const detailedStats = voteChart.data.datasets[0].detailedStats[dataIndex];
+                    if (detailedStats) {
+                        showDetailModal(candidateName, detailedStats);
+                    }
+                }
+            };
         }
         
         function initializeTurnoutChart() {
