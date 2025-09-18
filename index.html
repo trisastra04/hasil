@@ -85,19 +85,30 @@
         </header>
 
         <!-- Top Stats Wrapper -->
-        <div id="top-stats-wrapper" class="hidden max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 mb-4 items-start">
-            <!-- Total Votes Container -->
-            <div class="lg:col-span-1 text-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Total Suara Masuk</h2>
-                <p id="total-votes-display" class="text-6xl font-extrabold text-blue-600 dark:text-blue-400 my-2">0</p>
-                <div class="text-xs text-gray-500 dark:text-gray-400">
-                    <i class="fas fa-sync-alt fa-spin mr-1"></i>
-                    <span id="last-updated">Diperbarui...</span>
+        <div id="top-stats-wrapper" class="hidden max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-4">
+                <!-- Total Votes Container -->
+                <div class="text-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Total Suara Masuk</h2>
+                    <p id="total-votes-display" class="text-6xl font-extrabold text-blue-600 dark:text-blue-400 my-2">0</p>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-sync-alt fa-spin mr-1"></i>
+                        <span id="last-updated">Diperbarui...</span>
+                    </div>
+                </div>
+                <!-- Total Registered Voters Container -->
+                <div class="text-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Total Pemilih Ditetapkan</h2>
+                    <p class="text-6xl font-extrabold text-green-600 dark:text-green-400 my-2">229</p>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-users mr-1"></i>
+                        <span>Daftar Pemilih Tetap (DPT)</span>
+                    </div>
                 </div>
             </div>
-
+            
             <!-- Voter Stats per Class Container -->
-            <div class="lg:col-span-2 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+            <div class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md mb-4">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white text-center mb-4">Statistik Kehadiran Pemilih</h2>
                 <div class="relative h-56">
                     <canvas id="voterTurnoutChart"></canvas>
@@ -244,11 +255,11 @@
                 options: {
                     responsive: true,
                     onClick: (event, elements) => {
-                        if (elements.length > 0) {
-                            const dataIndex = elements[0].index;
-                            const chartData = elements[0].element.$context.chart.data;
-                            const candidateName = chartData.labels[dataIndex];
-                            const detailedStats = chartData.datasets[0].detailedStats[dataIndex];
+                        if (!elements.length) return;
+                        const dataIndex = elements[0].index;
+                        const candidateName = voteChart.data.labels[dataIndex];
+                        const detailedStats = voteChart.data.datasets[0].detailedStats[dataIndex];
+                        if (detailedStats) {
                             showDetailModal(candidateName, detailedStats);
                         }
                     },
